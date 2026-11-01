@@ -1,0 +1,18 @@
+'use client';
+import { useEffect,useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Crown, Bell, Search, ArrowUpLeft, BookOpen, ClipboardCheck, Sparkles, PlayCircle } from 'lucide-react';
+import Sidebar from '@/components/Sidebar';
+import {getSupabase} from '@/lib/supabase';
+import {curriculum,getAllLessons} from '@/lib/courses';
+export default function Dashboard(){const [profile,setProfile]=useState(null);const [loading,setLoading]=useState(true);const router=useRouter();
+ useEffect(()=>{(async()=>{try{const s=getSupabase();const {data:{user}}=await s.auth.getUser();if(!user){router.replace('/login');return;}const {data}=await s.from('profiles').select('username,education_system').eq('id',user.id).single();if(!data?.education_system){router.replace('/choose-stage');return;}setProfile(data);}catch{router.replace('/login');}finally{setLoading(false);}})();},[router]);
+ if(loading||!profile)return <main className="loading-screen">جاري تجهيز مساحتك التعليمية...</main>;
+ const stage=profile.education_system==='البكالوريا'?'baccalaureate':'secondary';const course=curriculum[stage];const lessons=getAllLessons(stage);
+ return <div className="app-layout"><Sidebar stage={stage}/><main className="main-area"><header className="topbar"><div><span className="eyebrow">مساحتك التعليمية</span><h2>أهلاً بك، {profile.username||'طالب القيصر'}</h2></div><div className="top-actions"><button className="icon-button"><Bell/></button><div className="user-chip"><span className="avatar">{(profile.username||'ط').slice(0,1)}</span><span>{course.label}<small>حساب طالب</small></span></div></div></header>
+ <section className="welcome-banner"><div className="banner-content"><span className="pill"><Sparkles size={14}/> رحلة التفوق مستمرة</span><h1>أهلاً بك في عالم <em>القيصر</em></h1><p>افهم بعمق، تدرّب بذكاء، وتابع تقدمك خطوة بخطوة.</p><a href="#subjects" className="banner-button">ابدأ التعلم <ArrowUpLeft size={18}/></a></div><div className="banner-crown"><Crown size={112}/></div></section>
+ <section className="section-block" id="subjects"><div className="section-title"><div><span className="eyebrow">محتوى مرحلتك</span><h2>المواد والوحدات الدراسية</h2></div><span className="count-label">{course.groups.length} أقسام</span></div><div className="subject-grid">{course.groups.map((group,i)=><article className="subject-card" key={group.title}><div className="subject-card-top"><span className="subject-icon"><BookOpen/></span><span className="subject-number">{String(i+1).padStart(2,'0')}</span></div><h3>{group.title}</h3><p>{group.items.length} درساً متاحاً في هذا القسم</p><div className="lesson-list">{group.items.slice(0,4).map((item,j)=>{const lesson=lessons.find(x=>x.title===item&&x.group===group.title);return <Link key={item} href={`/lesson/${lesson?.slug}`}><span>{item}</span><ArrowUpLeft size={15}/></Link>})}</div>{group.items.length>4&&<span className="more-lessons">+ {group.items.length-4} دروس أخرى</span>}</article>)}</div></section>
+ <section className="lower-grid"><article className="feature-card" id="assessments"><div className="feature-icon"><ClipboardCheck/></div><h3>التقييمات والاختبارات</h3><p>اختبر فهمك بعد كل درس، وتابع نتيجتك في تقييمات مرحلتك الدراسية.</p><span className="coming-soon">تجهيز بنك الأسئلة</span></article><article className="feature-card" id="progress"><div className="feature-icon"><Sparkles/></div><h3>تقدمك الدراسي</h3><p>سيظهر هنا سجل الدروس المكتملة ودرجات الاختبارات ونقاط تحتاج إلى مراجعة.</p><span className="coming-soon">يُفعّل مع إضافة المحتوى</span></article></section>
+ <footer className="page-footer">منصة القيصر <span>✦</span> بالعلم نصنع المستقبل</footer></main></div>
+}
